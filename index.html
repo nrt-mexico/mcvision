@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>McVision - Selección</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link rel="stylesheet" href="mcvision.css">
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+
+</head>
+
+<body>
+
+
+  <div class="fondo-rojo"></div>
+  <canvas id="voiceCanvas"></canvas>
+  
+
+  <div id="cursor"></div>
+  <div class="contenido">
+    <img src="imgs/McVisionLogo.png" alt="Logo McVision" class="logo" />
+
+    <div class="selector hidden">
+      <!-- <button class="boton-circular" onclick="iniciarVoz()">
+        <img src="imgs/voice.png" alt="Iniciar por voz">
+      </button> -->
+      <button class="boton-circular" onclick="iniciarManos()">
+        <img src="imgs/hand.png" alt="Iniciar con manos">
+      </button>
+    </div>
+
+    <div id="advice" class="show">
+      <span>Acercate para comenzar</p>
+    </div>
+  </div>
+
+  <div id="video-container">
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script>
+    function iniciarVoz() {
+      window.location.href = "auditivo.html";
+    }
+
+    function iniciarManos() {
+      window.location.href = "visual.html";
+    }
+  </script>
+
+
+
+  <script>
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'es-PE';
+
+    function normalizar(texto) {
+      return texto
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9 ]/g, '')
+        .trim();
+    }
+
+    function iniciarMicroVisual() {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const micAudio = new Audio();
+        micAudio.srcObject = stream;
+        iniciarVisualizacion(micAudio, "mic");
+      });
+    }
+
+    function hablarConVozNatural(texto) {
+        console.log('hablando')
+      fetch("/talentland/eleven.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "texto=" + encodeURIComponent(texto)
+      })
+        .then(res => res.blob())
+        .then(audioBlob => {
+          const audioURL = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioURL);
+          audio.play();
+          iniciarVisualizacion(audio, "voz");
+          audio.onended = () => {
+
+            iniciarMicroVisual();
+            recognition.start();
+          };
+        })
+        .catch((e) => {
+            console.error(e)
+        });
+
+
+    }
+
+    function obtenerRespuesta(textoOriginal) {
+      const texto = normalizar(textoOriginal);
+      console.log("Texto reconocido:", textoOriginal, "→ Normalizado:", texto);
+
+      if (texto.includes("iniciar") || texto.includes('si')) {
+
+        return ["Empezamos la experiencia", true]
+      }
+
+      return ["Lo siento, no entendí eso. ¿Puedes repetirlo?", false];
+    }
+
+    recognition.onresult = function (event) {
+      const texto = event.results[0][0].transcript;
+      const [respuesta, valid] = obtenerRespuesta(texto);
+
+      hablarConVozNatural(respuesta);
+
+      if (valid) {
+        window.location.href = "/talentland/auditivo.html";
+      }
+    };
+
+    recognition.onerror = function (event) {
+        console.log(event)
+      hablarConVozNatural("Hubo un problema al escuchar. Intenta de nuevo.");
+    };
+
+    // Visualizador de ondas
+    const canvas = document.getElementById("voiceCanvas");
+    const ctx = canvas.getContext("2d");
+    let animationFrame;
+    let audioContext;
+    let analyser;
+    let source;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    // window.addEventListener("resize", resizeCanvas);
+    // resizeCanvas();
+
+    window.iniciarVisualizacion = function (audioSource, modo = "mic") {
+      if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+
+      if (source) source.disconnect();
+      source = audioContext.createMediaElementSource(audioSource);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const colorFondo = modo === "mic" ? "#FFD600" : "#db1b1b";
+    const colorOnda = modo === "mic" ? "#00cc66" : "#FFD600";
+
+      function draw() {
+        animationFrame = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+
+        ctx.fillStyle = colorFondo;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / dataArray.length) * 2.5;
+        let x = 0;
+
+        for (let i = 0; i < dataArray.length; i++) {
+          const barHeight = dataArray[i] / 1.5;
+          ctx.fillStyle = colorOnda;
+          ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          x += barWidth + 1;
+        }
+      }
+
+      draw();
+
+      audioSource.onended = () => {
+        cancelAnimationFrame(animationFrame);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      };
+    };
+
+
+  </script>
+
+  <script  type="module">
+    import { FaceDetector } from './detection/faces/detector.js';
+    import { HandsDetector } from './detection/hands/detector.js';
+    import { ClickPose, HandPointerPose } from './detection/hands/poses.js';
+    import { isColliding } from './detection/utils.js';
+
+    import { VisionManager } from './detection/vision.js';
+
+    const videoElement = document.querySelector('#video');
+    const canvasElement = document.querySelector('#canvas');
+
+    const cursor = document.querySelector('#cursor');
+
+
+    const selector = document.querySelector('.selector');
+
+
+    const advice = document.querySelector('#advice');
+
+    let transitionBlocker = false
+    
+    let farTimeOut = null
+    function handlerNear(isNear) {
+      if (isNear) {
+        advice.classList.remove('show');
+        advice.classList.add('hidden');
+        setTimeout(() => {
+          selector.classList.remove('hidden');
+          selector.classList.add('show');
+          hablarConVozNatural("Hola!. Para usar el sistema: di la palabra 'iniciar' o presiona el botón en pantalla con tu mano")
+          
+        }, 500)
+      } else {
+        selector.classList.remove('show');
+        selector.classList.add('hidden');
+        setTimeout(() => {
+          advice.classList.remove('hidden');
+          advice.classList.add('show');
+        }, 500)
+      }
+    }
+    const faceDetector = new FaceDetector(videoElement, canvasElement, (res) => {
+
+      const neartes = res.nearest;
+      if (!neartes && !farTimeOut) {
+          farTimeOut = setTimeout(()=>{
+            transitionBlocker = false
+          },5000)
+      }
+
+    if (neartes && farTimeOut) {
+        clearTimeout(farTimeOut)
+        farTimeOut = null;
+      }
+
+      if (neartes && !transitionBlocker) {
+        handlerNear(neartes)
+        transitionBlocker = true
+      }
+
+    }, false);
+
+    const detector = new HandsDetector(videoElement, canvasElement, 0.1, false);
+
+    detector.addPose(new HandPointerPose(0.1, 0.05, ({ movement, center }) => {
+      // Mueve el cursor a la posición de la mano (center)
+      if (!cursor || !center) return;
+
+      // Convierte coordenadas normalizadas a píxeles según el tamaño del viewport
+      const x = center.x * window.innerWidth;
+      const y = center.y * window.innerHeight;
+      cursor.style.left = `${x}px`;
+      cursor.style.top = `${y}px`;
+
+    }
+    ));
+
+
+    let clickableElements = []
+
+    const customEvent = new CustomEvent('handclick', { bubbles: true });
+    detector.addPose(new ClickPose(0.3, () => {
+      clickableElements?.forEach((element) => element.dispatchEvent(customEvent));
+
+    })); // Añadir la pose de mano abierta con un umbral de 0.1
+
+
+
+    let blocked = false;
+    export const bindClick = (element, callback) => {
+
+      element.addEventListener('handclick', () => {
+        if (blocked) return;
+        if (!isColliding(element, cursor)) {
+          return
+        }
+
+        blocked = true;
+        callback();
+        setTimeout(() => {
+          blocked = false;
+        }, 1000);
+      });
+      clickableElements.push(element);
+    }
+
+    document.querySelectorAll('.boton-circular').forEach((button) => {
+      bindClick(button, () => {
+        button.click();
+      });
+    });
+
+
+    const manager = new VisionManager(videoElement, canvasElement, async () => {
+      await detector.process(videoElement);
+      await faceDetector.process(videoElement);
+    })
+
+    manager.start();
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,72 @@
+{
+  "hamburguesas": [
+    {
+      "nombre": "Big Mac",
+      "alias": ["big mac", "bic mac"],
+      "precio": 90
+    },
+    {
+      "nombre": "Cuarto de Libra",
+      "alias": ["cuarto de libra", "4to de libra", "1/4 de libra"],
+      "precio": 85
+    },
+    {
+      "nombre": "McNífica",
+      "alias": ["mcnifica", "magnifica", "mc nifica"],
+      "precio": 88
+    }
+  ],
+  "bebidas": [
+    {
+      "nombre": "Coca Cola",
+      "alias": ["coca", "coca cola", "coca normal"],
+      "precio": 20
+    },
+    {
+      "nombre": "Coca Zero",
+      "alias": ["coca zero", "coca sin azúcar", "zero"],
+      "precio": 20
+    },
+    {
+      "nombre": "Fanta",
+      "alias": ["fanta", "naranja"],
+      "precio": 20
+    }
+  ],
+  "papas": [
+    {
+      "nombre": "Papas medianas",
+      "alias": ["papas medianas", "papas normales", "papas"],
+      "precio": 30
+    },
+    {
+      "nombre": "Papas grandes",
+      "alias": ["papas grandes", "papas extra", "grandes"],
+      "precio": 40
+    }
+  ],
+  "postres": [
+    {
+      "nombre": "Helado",
+      "alias": ["helado"],
+      "precio": 25
+    },
+    {
+      "nombre": "McFlurry",
+      "alias": ["mcflurry", "flurry", "postre mcflurry"],
+      "precio": 35
+    }
+  ],
+  "combos": [
+    {
+      "nombre": "Big Mac Combo",
+      "alias": ["combo big mac", "big mac combo", "combo de big mac"],
+      "precio": 120
+    },
+    {
+      "nombre": "Cuarto de Libra Combo",
+      "alias": ["combo cuarto de libra", "cuarto de libra combo"],
+      "precio": 115
+    }
+  ]
+}

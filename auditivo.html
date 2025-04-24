@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>McVision</title>
+
+  <link rel="stylesheet" href="mcvision.css">
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB4nOsAsC5xDFVQydr8NQIF1XWjF37VCrA",
+    authDomain: "nrt-mexico.firebaseapp.com",
+    databaseURL: "https://nrt-mexico-default-rtdb.firebaseio.com",
+    projectId: "nrt-mexico",
+    storageBucket: "nrt-mexico.firebasestorage.app",
+    messagingSenderId: "1004312264638",
+    appId: "1:1004312264638:web:ec68475a1a38aaa57f43ef",
+    measurementId: "G-B5XGS8XR0Y"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.guardarCarritoEnFirebase = function (carrito) {
+    const pedido = {
+      fecha: new Date().toISOString(),
+      productos: carrito,
+      total: carrito.reduce((sum, p) => sum + p.precio, 0)
+    };
+
+    const refPedidos = ref(db, 'talentland/pedidos');
+    push(refPedidos, pedido)
+      .then(() => console.log("🛒 Pedido guardado en Firebase"))
+      .catch(err => console.error("❌ Error al guardar pedido", err));
+  };
+</script>
+
+
+</head>
+
+<body>
+
+  <div class="fondo-rojo"></div>
+
+  <canvas id="voiceCanvas"></canvas>
+
+  <div class="contenido">
+    <img id="logoMcVision" src="imgs/McVisionLogo.png" alt="Logo McVision" />
+    <div id="statusBox" style="font-size: 1rem; color: #fff;">Esperando...</div>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+
+</html>

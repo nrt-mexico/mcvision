@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>McVision - Menú Visual</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: row;
+      width: 360px;
+      height: 100vh;
+      background-color: #fffbdc;
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    #cursor {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-color: #d7d7d7;
+      border-radius: 50%;
+      pointer-events: none;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+    }
+
+    #video-container {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 360px;
+      z-index: 1000;
+    }
+
+    #video {
+      display: none;
+    }
+
+    .sidebar {
+      width: 110px;
+      background-color: #fffbdc;
+      border-right: 2px solid #eee;
+      padding: 1rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .sidebar button {
+      background-color: #ffd600;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      width: 90px;
+      height: 70px;
+      font-size: 0.85rem;
+      text-align: center;
+      cursor: pointer;
+      padding: 0.5rem;
+      transition: background 0.2s ease;
+    }
+
+    .sidebar button:hover,
+    .sidebar button.active {
+      background-color: #fdd835;
+    }
+
+    .content {
+      flex: 1;
+      padding: 2rem 1rem;
+      overflow-y: auto;
+      background-color: #fff;
+    }
+
+    .category-title {
+      font-size: 1.6rem;
+      color: #db1b1b;
+      margin-bottom: 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .item-card {
+      background: #fffbdc;
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .item-card:hover {
+      transform: scale(1.05);
+    }
+
+    .item-card img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      margin-bottom: 0.5rem;
+    }
+    .camara{
+    border-radius:30px;
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal {
+      background: #fff;
+      max-width: 320px;
+      width: 90%;
+      border-radius: 20px;
+      padding: 2rem;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal p {
+      font-size: 1rem;
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal button {
+      background-color: #ffd600;
+      border: none;
+      border-radius: 30px;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #000;
+    }
+
+    .modal button:hover {
+      background-color: #fdd835;
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+  <script src="./detection/main.js" type="module"></script>
+</head>
+
+<body>
+  <div id="cursor"></div>
+
+  <div id="video-container">
+    <video id="video" autoplay></video>
+    <canvas class="camara" id="canvas"></canvas>
+  </div>
+
+  <div class="wrapper">
+    <div class="sidebar">
+      <button class="active" onclick="cargar('hamburguesas')">🍔<br>Hamburguesas</button>
+      <button onclick="cargar('bebidas')">🥤<br>Bebidas</button>
+      <button onclick="cargar('papas')">🍟<br>Papas</button>
+      <button onclick="cargar('postres')">🍦<br>Postres</button>
+      <button onclick="cargar('combos')">🍽️<br>Combos</button>
+    </div>
+
+    <div class="content">
+      <div class="category-title" id="categoria">Hamburguesas</div>
+      <div class="grid" id="productos">
+        <!-- Productos se llenan dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE INICIO -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <p>
+        Esta sección está en desarrollo. El equipo <strong>NimRoT</strong> se enfocó en el prototipo de valor agregado del producto que es la discapacidad visual. Puede usar esta sección, pero tome en cuenta que habrá algunas fallas.
+      </p>
+      <button onclick="cerrarModal()">Entiendo</button>
+    </div>
+  </div>
+
+  <script>
+    const productosEl = document.getElementById("productos");
+    const categoriaEl = document.getElementById("categoria");
+
+    const menu = {
+      hamburguesas: [
+        { nombre: "Big Mac", img: "https://i.imgur.com/vT1XJ8A.png" },
+        { nombre: "Cuarto de Libra", img: "https://i.imgur.com/VGpnWmM.png" },
+        { nombre: "McNífica", img: "https://i.imgur.com/AehB7KU.png" }
+      ],
+      bebidas: [
+        { nombre: "Coca Cola", img: "https://i.imgur.com/JIGUsZk.png" },
+        { nombre: "Coca Zero", img: "https://i.imgur.com/bZzCJlf.png" },
+        { nombre: "Fanta", img: "https://i.imgur.com/D7Sn8tF.png" }
+      ],
+      papas: [
+        { nombre: "Papas medianas", img: "https://i.imgur.com/3P7VdnB.png" },
+        { nombre: "Papas grandes", img: "https://i.imgur.com/6mNT1mU.png" }
+      ],
+      postres: [
+        { nombre: "Sundae", img: "https://i.imgur.com/SK5Vn3P.png" },
+        { nombre: "McFlurry", img: "https://i.imgur.com/cVAlGpK.png" }
+      ],
+      combos: [
+        { nombre: "Big Mac Combo", img: "https://i.imgur.com/NKPUiEw.png" },
+        { nombre: "Cuarto de Libra Combo", img: "https://i.imgur.com/EJNmJk3.png" }
+      ]
+    };
+
+    function cargar(tipo) {
+      categoriaEl.textContent = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+      productosEl.innerHTML = "";
+      document.querySelectorAll(".sidebar button").forEach(btn => btn.classList.remove("active"));
+      event?.target?.classList.add("active");
+
+      menu[tipo].forEach(item => {
+        const card = document.createElement("div");
+        card.className = "item-card";
+        card.innerHTML = `
+          <img src="${item.img}" alt="${item.nombre}" />
+          <div>${item.nombre}</div>
+        `;
+        productosEl.appendChild(card);
+      });
+    }
+
+    cargar("hamburguesas");
+
+    // Modal: cerrar
+    function cerrarModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+  </script>
+
+  <script type="module">
+    import { bindClick } from './detection/main.js';
+    document.querySelectorAll('.sidebar button').forEach(button => {
+      bindClick(button, () => { button.click(); });
+    });
+  </script>
+</body>
+</html>
